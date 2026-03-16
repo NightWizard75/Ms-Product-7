@@ -1,11 +1,8 @@
-﻿using Application.Features.Stock.ReserveStock;
+﻿using Application.Features.Stock.CancelReserveStock;
 
 namespace Web.Requests;
 
-/// <summary>
-/// HTTP-запрос на резервирование стока.
-/// </summary>
-public record ReserveStockRequest(
+public record CancelReserveStockRequest(
     Guid ProductId,
     int Quantity,
     string CorrelationId
@@ -14,7 +11,7 @@ public record ReserveStockRequest(
     /// <summary>
     /// Маппинг HTTP DTO → Application Command.
     /// </summary>
-    public ReserveStockCommand ToCommand() => new ReserveStockCommand(
+    public CancelReserveStockCommand ToCommand() => new CancelReserveStockCommand(
         ProductId,
         Quantity,
         CorrelationId

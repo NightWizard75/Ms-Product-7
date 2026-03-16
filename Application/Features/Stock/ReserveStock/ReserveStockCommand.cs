@@ -6,4 +6,4 @@ public record ReserveStockCommand(
     Guid ProductId,
     int Quantity,
     string CorrelationId
-) : IRequest<Unit>;
+) : IRequest<Unit>, IRequest;
