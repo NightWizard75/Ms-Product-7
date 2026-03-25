@@ -4,7 +4,8 @@ public record ProductDto(
     Guid Id,
     string Name,
     string Description,
-    decimal Price,
+    int PriceInKopecks,
+    string PriceAsMoney, // ✅ Вычисляемое: форматированная строка для UI
     int StockQuantity,
     int ReservedQuantity,
     int AvailableQuantity

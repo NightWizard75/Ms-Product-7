@@ -20,7 +20,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Description)
             .HasMaxLength(1000);
 
-        builder.Property(p => p.Price)
+        builder.Property(p => p.PriceInKopecks)
             .IsRequired()
             .HasPrecision(18, 2);
 
@@ -28,7 +28,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .IsRequired();
 
         builder.Property(p => p.ReservedQuantity)
-            .IsRequired();
+            .IsRequired()
+            .HasDefaultValue(0);
 
         builder.Ignore(p => p.AvailableQuantity);
 

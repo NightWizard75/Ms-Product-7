@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Application.Shared.DTOs;
 using IntegrationTests.Fixtures;
 using IntegrationTests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,31 +20,31 @@ public class CreateProductTests(ProductWebApplicationFactory factory)
     public async Task CreateProduct_ValidData_Returns201AndCreatedProduct()
     {
         // Arrange
-        var productId = Guid.NewGuid();
         var request = new CreateProductRequest(
-            Id: productId,
             Name: "Тестовый продукт",
             Description: "Описание для теста",
-            Price: 999.99m,
+            PriceAsMoney: null,
+            PriceInKopecks: 99999,
             StockQuantity: 50
         );
 
         // Act
         // 👇 Используем наше расширение + явный тип ответа
         var response = await _client.PostJsonAsync<CreateProductRequest>("/api/products", request);
-        var responseBody = await response.ReadFromJsonAsync<ApiResponse<Guid>>();
+        var responseBody = await response.ReadFromJsonAsync<ApiResponse<ProductCreatedDto>>();
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(responseBody);
         Assert.True(responseBody.Success);
-        Assert.Equal(productId, responseBody.Data);
+        Assert.NotNull(responseBody.Data);
+        Assert.NotEqual(Guid.Empty, responseBody.Data.Id);
         Assert.Equal("Продукт успешно создан", responseBody.Message);
 
         // 🔍 Проверяем, что продукт действительно сохранён в БД
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<Infrastructure.Database.Context.ProductDbContext>();
-        var savedProduct = await context.Products.FindAsync(productId);
+        var savedProduct = await context.Products.FindAsync(responseBody.Data.Id);
         
         Assert.NotNull(savedProduct);
         Assert.Equal("Тестовый продукт", savedProduct.Name);
@@ -55,10 +56,10 @@ public class CreateProductTests(ProductWebApplicationFactory factory)
     {
         // Arrange
         var request = new CreateProductRequest(
-            Id: Guid.NewGuid(),
             Name: "",  // ❌ Пустое имя — нарушение валидации
             Description: "Описание",
-            Price: 100,
+            PriceAsMoney: null,
+            PriceInKopecks: 100,
             StockQuantity: 10
         );
 
@@ -83,39 +84,5 @@ public class CreateProductTests(ProductWebApplicationFactory factory)
         Assert.NotNull(problemDetails.Errors);
         Assert.Contains("Name", problemDetails.Errors.Keys);
         Assert.Contains("обязательно", problemDetails.Errors["Name"].FirstOrDefault());
-    }
-
-    [Fact]
-    public async Task CreateProduct_DuplicateId_Returns409Conflict()
-    {
-        // Arrange
-        var productId = Guid.Parse("10000000-0000-0000-0000-000000000001");
-        
-        // Создаём продукт первый раз
-        var firstRequest = new CreateProductRequest(
-            Id: productId,
-            Name: "Первый продукт",
-            Description: "Описание",
-            Price: 100,
-            StockQuantity: 10
-        );
-        await _client.PostJsonAsync<CreateProductRequest>("/api/products", firstRequest);
-
-        // Пытаемся создать с тем же ID
-        var secondRequest = new CreateProductRequest(
-            Id: productId,  // ❌ Дубликат ID
-            Name: "Второй продукт",
-            Description: "Другое описание",
-            Price: 200,
-            StockQuantity: 20
-        );
-
-        // Act
-        var response = await _client.PostJsonAsync<CreateProductRequest>("/api/products", secondRequest);
-
-        // Assert
-        // ⚠️ EF Core выбросит DbUpdateException с unique_violation (23505)
-        // который наш ExceptionHandler маппит на 409 Conflict
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 }

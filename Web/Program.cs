@@ -2,6 +2,7 @@ using Application;
 using Infrastructure;
 using Infrastructure.Database.Seeders;
 using Serilog;
+using Web;
 using Web.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,12 +20,7 @@ builder.Host.UseSerilog();
 // 🔧 Dependency Injection
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new() { Title = "Product Service API", Version = "v1" });
-});
+builder.Services.AddWeb();
 
 // 🔧 Exceptions: регистрируем обработчик
 builder.Services.AddExceptionHandler<ExceptionHandler>();

@@ -17,14 +17,6 @@ public class GetProductByIdHandler(IProductRepository repository)
                 "Product", 
                 new Dictionary<string, object?> { ["id"] = request.Id });
 
-        return new ProductDto(
-            product.Id,
-            product.Name,
-            product.Description,
-            product.Price,
-            product.StockQuantity,
-            product.ReservedQuantity,
-            product.AvailableQuantity
-        );
+        return product.ToDto();
     }
 }

@@ -1,11 +1,11 @@
-﻿using MediatR;
+﻿using Application.Shared.DTOs;
+using MediatR;
 
 namespace Application.Features.Products.CreateProduct;
 
 public record CreateProductCommand(
-    Guid Id,
     string Name,
     string Description,
-    decimal Price,
+    int PriceInKopecks,
     int StockQuantity
-) : IRequest<Guid>;
+) : IRequest<ProductCreatedDto>;

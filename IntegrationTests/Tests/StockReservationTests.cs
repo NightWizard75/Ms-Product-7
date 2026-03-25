@@ -24,11 +24,10 @@ public class StockReservationTests(ProductWebApplicationFactory factory)
     public async Task ReserveStock_EnoughStock_Returns204AndDecrementsAvailable()
     {
         // Arrange: создаём продукт с известным стоком
-        var productId = Guid.NewGuid();
         const int initialStock = 100;
         const int reserveQuantity = 30;
         
-        await CreateTestProductAsync(productId, "Reserve Test Product", "", 50m, initialStock);
+        var productId = await CreateTestProductAsync("Reserve Test Product", "", 5000, initialStock);
 
         var reserveRequest = new ReserveStockRequest(
             ProductId: productId,
@@ -60,11 +59,10 @@ public class StockReservationTests(ProductWebApplicationFactory factory)
     public async Task ReserveStock_InsufficientStock_Returns409Conflict()
     {
         // Arrange: продукт с малым стоком
-        var productId = Guid.NewGuid();
         const int initialStock = 10;
         const int reserveQuantity = 50; // 👈 Больше, чем есть
         
-        await CreateTestProductAsync(productId, "Low Stock Product", "", 50m, initialStock);
+        var productId = await CreateTestProductAsync("Low Stock Product", "", 5000, initialStock);
 
         var reserveRequest = new ReserveStockRequest(
             ProductId: productId,
@@ -108,12 +106,11 @@ public class StockReservationTests(ProductWebApplicationFactory factory)
     public async Task CancelReserveStock_ValidRequest_Returns204AndRestoresStock()
     {
         // Arrange: создаём продукт и резервируем сток
-        var productId = Guid.NewGuid();
         const int initialStock = 100;
         const int reserveQuantity = 30;
         var correlationId = Guid.NewGuid().ToString();
         
-        await CreateTestProductAsync(productId, "Cancel Reserve Test", "", 50m, initialStock);
+        var productId = await CreateTestProductAsync("Cancel Reserve Test", "", 5000, initialStock);
         
         // Сначала резервируем
         var reserveRequest = new ReserveStockRequest(productId, reserveQuantity, correlationId);
@@ -140,8 +137,7 @@ public class StockReservationTests(ProductWebApplicationFactory factory)
     public async Task CancelReserveStock_MoreThanReserved_Returns409Conflict()
     {
         // Arrange: резервируем 10, пытаемся отменить 50
-        var productId = Guid.NewGuid();
-        await CreateTestProductAsync(productId, "Cancel Test", "", 50m, 100);
+        var productId = await CreateTestProductAsync("Cancel Test", "", 5000, 100);
         
         // Резервируем 10
         var reserveRequest = new ReserveStockRequest(productId, 10, Guid.NewGuid().ToString());
@@ -183,22 +179,24 @@ public class StockReservationTests(ProductWebApplicationFactory factory)
     /// <summary>
     /// Создаёт тестовый продукт через HTTP API (как в реальном использовании).
     /// </summary>
-    private async Task CreateTestProductAsync(
-        Guid id, 
+    private async Task<Guid> CreateTestProductAsync(
         string name, 
         string description, 
-        decimal price, 
+        int priceInKopecks, 
         int stockQuantity)
     {
         var request = new CreateProductRequest(
-            Id: id,
             Name: name,
             Description: description,
-            Price: price,
+            PriceInKopecks: priceInKopecks,
+            PriceAsMoney: null,
             StockQuantity: stockQuantity
         );
 
         var response = await _client.PostJsonAsync<CreateProductRequest>("/api/products", request);
         response.EnsureSuccessStatusCode();
+        
+        var responseBody = await response.ReadFromJsonAsync<ApiResponse<ProductCreatedDto>>();
+        return responseBody?.Data?.Id ?? throw new InvalidOperationException("Failed to read created product ID");
     }
 }

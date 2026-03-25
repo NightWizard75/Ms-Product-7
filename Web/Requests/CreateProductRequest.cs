@@ -1,4 +1,5 @@
-﻿using Application.Features.Products.CreateProduct;
+﻿using System.Globalization;
+using Application.Features.Products.CreateProduct;
 
 namespace Web.Requests;
 
@@ -6,17 +7,37 @@ namespace Web.Requests;
 /// HTTP-запрос на создание продукта.
 /// </summary>
 public record CreateProductRequest(
-    Guid Id,
     string Name,
     string Description,
-    decimal Price,
+    int? PriceInKopecks,      // ← Теперь необязательное (одно из двух)
+    string? PriceAsMoney,     // ← Новое поле: "1999.99"
     int StockQuantity
 )
 {
-public CreateProductCommand ToCommand() => new CreateProductCommand(
-    Id,
-    Name,
-    Description,
-    Price,
-    StockQuantity);
+    /// <summary>
+    /// Конвертирует запрос в команду.
+    /// Вызывается ПОСЛЕ валидации (гарантировано одно поле заполнено).
+    /// </summary>
+    public CreateProductCommand ToCommand()
+    {
+        var kopecks = PriceInKopecks ?? KopecksFromPriceAsMoney();
+        
+        return new CreateProductCommand(
+            Name: Name,
+            Description: Description,
+            PriceInKopecks: kopecks,
+            StockQuantity: StockQuantity
+        );
+    }
+
+    /// <summary>
+    /// Парсит PriceAsMoney в копейки.
+    /// </summary>
+    private int KopecksFromPriceAsMoney()
+    {
+        var normalized = PriceAsMoney!.Replace(',', '.');
+        var amount = decimal.Parse(normalized, CultureInfo.InvariantCulture);
+        
+        return (int)Math.Round(amount * 100);
+    }
 }

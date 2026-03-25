@@ -24,8 +24,7 @@ public class GetProductTests(ProductWebApplicationFactory factory)
     public async Task GetProduct_ExistingId_Returns200AndProduct()
     {
         // Arrange: создаём тестовый продукт
-        var productId = Guid.NewGuid();
-        await CreateTestProductAsync(productId, "Тестовый продукт", "Описание", 99.99m, 10);
+        var productId = await CreateTestProductAsync("Тестовый продукт", "Описание", 9999, 10);
 
         // Act: запрашиваем продукт по ID
         var response = await _client.GetAsync($"/api/products/{productId}");
@@ -38,16 +37,16 @@ public class GetProductTests(ProductWebApplicationFactory factory)
         Assert.NotNull(result.Data);
         Assert.Equal(productId, result.Data.Id);
         Assert.Equal("Тестовый продукт", result.Data.Name);
-        Assert.Equal(99.99m, result.Data.Price);
+        Assert.Equal(9999, result.Data.PriceInKopecks);
     }
 
     [Fact]
     public async Task GetProduct_ExistingId_ReturnsCorrectAvailableQuantity()
     {
         // Arrange: создаём продукт с известным StockQuantity
-        var productId = Guid.NewGuid();
         const int stockQuantity = 50;
-        await CreateTestProductAsync(productId, "Product for Quantity Test", "", 50m, stockQuantity);
+        
+        var productId = await CreateTestProductAsync("Product for Quantity Test", "", 5000, stockQuantity);
 
         // Act
         var response = await _client.GetAsync($"/api/products/{productId}");
@@ -102,22 +101,24 @@ public class GetProductTests(ProductWebApplicationFactory factory)
     /// <summary>
     /// Создаёт тестовый продукт через HTTP API (как в реальном использовании).
     /// </summary>
-    private async Task CreateTestProductAsync(
-        Guid id, 
+    private async Task<Guid> CreateTestProductAsync(
         string name, 
         string description, 
-        decimal price, 
+        int priceInKopecks, 
         int stockQuantity)
     {
         var request = new CreateProductRequest(
-            Id: id,
             Name: name,
             Description: description,
-            Price: price,
+            PriceInKopecks: priceInKopecks,
+            PriceAsMoney: null,
             StockQuantity: stockQuantity
         );
 
         var response = await _client.PostJsonAsync<CreateProductRequest>("/api/products", request);
         response.EnsureSuccessStatusCode();
+        
+        var responseBody = await response.ReadFromJsonAsync<ApiResponse<ProductCreatedDto>>();
+        return responseBody?.Data?.Id ?? throw new InvalidOperationException("Failed to read created product ID");
     }
 }

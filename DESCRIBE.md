@@ -75,6 +75,32 @@ Ms-Product-7.sln
 dotnet ef migrations add InitialCreate --project Infrastructure --startup-project Web --output-dir Database/Migrations
 ```
 
+### Структура DbContext
+
+1️⃣ Единый стандарт: Конфигурация сущностей через IEntityTypeConfiguration<T>
+```csharp
+// OrderService.Infrastructure/Database/Context/ProductDbContext.cs
+
+public class OrderDbContext(DbContextOptions<OrderDbContext> options) : DbContext(options)
+{
+    public DbSet<Order> Orders => Set<Order>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        
+        // 👇 вынос конфигурации в отдельные классы
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrderDbContext).Assembly);
+    }
+}
+```
+
+2️⃣ DbContextFactory для миграций
+
+Фабрика для создания DbContext при дизайне (миграции, EF Core CLI).
+Не используется в runtime — только для dotnet ef commands.
+
+
 
 📁 Структура тестового проекта
 ```
@@ -183,3 +209,10 @@ public partial class Program { }
 | 4   | WebApplicationFactory<Program> успешно находит точку входа                |
 
 
+Изменение цены в рублях на цену в копейках
+Этап 1: Dual-Price в Product Service (сначала!)
+├─ Шаг 1: Обновить Product entity (PriceInKopecks + метод GetPriceAsMoney) + 
+├─ Шаг 2: Обновить CreateProductRequest (два поля цены) + 
+├─ Шаг 3: создал валидатор (XOR логика) + (добавил регистрацию DI) +
+├─ Шаг 4: Обновить ProductDto (отдавать оба поля) +
+└─ Шаг 5: Обновить тесты Product Service

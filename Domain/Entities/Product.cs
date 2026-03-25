@@ -2,14 +2,16 @@
 
 namespace Domain.Entities;
 
-public class Product(Guid id, string name, string description, decimal price, int stockQuantity)
+public class Product(Guid id, string name, string description, int priceInKopecks, int stockQuantity)
 {
     private Product() : this(Guid.Empty, string.Empty, string.Empty, 0, 0) { }
 
     public Guid Id { get; private set; } = id;
     public string Name { get; private set; } = name;
     public string Description { get; private set; } = description;
-    public decimal Price { get; private set; } = price;
+    
+    /// <summary>Цена за единицу товара в копейках</summary>
+    public int PriceInKopecks { get; private set; } = priceInKopecks;
     public int StockQuantity { get; private set; } = stockQuantity;
     public int ReservedQuantity { get; private set; }
 
@@ -19,19 +21,27 @@ public class Product(Guid id, string name, string description, decimal price, in
         Guid id,
         string name,
         string description,
-        decimal price,
+        int priceInKopecks,
         int stockQuantity)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Название продукта не может быть пустым", nameof(name));
         
-        if (price < 0)
-            throw new ArgumentException("Цена не может быть отрицательной", nameof(price));
+        if (priceInKopecks < 0)
+            throw new ArgumentException("Цена не может быть отрицательной", nameof(priceInKopecks));
         
         if (stockQuantity < 0)
             throw new ArgumentException("Количество на складе не может быть отрицательным", nameof(stockQuantity));
 
-        return new Product(id, name.Trim(), description?.Trim() ?? string.Empty, price, stockQuantity);
+        return new Product(id, name.Trim(), description?.Trim() ?? string.Empty, priceInKopecks, stockQuantity);
+    }
+    
+    public string GetPriceAsMoney() => FormatKopecks(PriceInKopecks);
+    
+    private static string FormatKopecks(int kopecks)
+    {
+        var rubles = kopecks / 100m;
+        return $"{rubles:F2} RUB";
     }
 
     public void ReserveStock(int quantity)
