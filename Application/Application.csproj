@@ -18,6 +18,8 @@
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
         <!-- ✅ Абстракция для логирования -->
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+        <!-- Нужно для IMemoryCache -->
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     </ItemGroup>
     
 </Project>
